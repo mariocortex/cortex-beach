@@ -25,8 +25,9 @@ dotenv.config({ path: '../.env' });
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '..', 'uploads');
+// Ensure uploads directory exists.
+// Em produção (Easypanel) defina UPLOADS_DIR para um volume persistente.
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Multer config for file uploads
