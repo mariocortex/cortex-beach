@@ -250,51 +250,138 @@ function PublicDisplayPage() {
 
   const timeStr = clock.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-  const renderHeader = () => (
-    <div className="pd-header">
-      <div className="pd-header-left">
-        <span className="pd-logo-sm">🏐</span>
-        <span className="pd-tournament-name">{tournament.name}</span>
+  const renderNavbar = () => (
+    <div className="pd-navbar">
+      <div className="pd-navbar-left">
+        <span className="pd-navbar-brand">{tournament.name}</span>
       </div>
-      <div className="pd-header-center">
-        {selectedCategory && <span className="pd-category-badge">{selectedCategory}</span>}
-      </div>
-      <div className="pd-header-right">
-        <span className="pd-clock">{timeStr}</span>
-        <span className="pd-live-dot"></span>
-        <span className="pd-live-text">AO VIVO</span>
+      <div className="pd-navbar-right">
+        <span className="pd-navbar-clock">{timeStr}</span>
+        <div className="pd-live-badge">
+          <span className="pd-live-dot"></span>
+          <span className="pd-live-text">AO VIVO</span>
+        </div>
       </div>
     </div>
   );
 
+  const renderHero = (icon, title) => (
+    <div className="pd-hero">
+      <div className="pd-hero-left">
+        <div className="pd-hero-icon">
+          <span className="material-symbols-outlined">{icon}</span>
+        </div>
+        <div>
+          <h1 className="pd-hero-title">{title}</h1>
+          <div className="pd-hero-subtitle">
+            {selectedCategory && <span className="pd-hero-cat-badge">{selectedCategory}</span>}
+            <span className="pd-hero-series">CÓRTEX BEACH • SÉRIE ELITE</span>
+          </div>
+        </div>
+      </div>
+      <div className="pd-quick-stats">
+        <div className="pd-stat-card primary">
+          <span className="pd-stat-label">Atletas</span>
+          <span className="pd-stat-value">{rankings.length}</span>
+        </div>
+        <div className="pd-stat-card secondary">
+          <span className="pd-stat-label">Partidas</span>
+          <span className="pd-stat-value">{completedMatches.length}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStatsGrid = () => {
+    const totalPts = completedMatches.reduce((a, m) => a + (m.score_a || 0) + (m.score_b || 0), 0);
+    const avgPoints = completedMatches.length > 0
+      ? (totalPts / completedMatches.length).toFixed(1)
+      : '0.0';
+    const mvp = rankings[0];
+    return (
+      <div className="pd-stats-grid">
+        <div className="pd-insight-card">
+          <div className="pd-insight-label">Média Pts / Partida</div>
+          <div>
+            <span className="pd-insight-value">{avgPoints}</span>
+            <span className="pd-insight-sub">PTS</span>
+          </div>
+        </div>
+        <div className="pd-insight-card">
+          <div className="pd-insight-label">MVP do Torneio</div>
+          {mvp ? (
+            <div className="pd-insight-player">
+              <div className="pd-insight-player-avatar">{mvp.name.charAt(0).toUpperCase()}</div>
+              <div>
+                <div className="pd-insight-player-name">{mvp.name}</div>
+                <div className="pd-insight-player-stat">{mvp.points} PTS • {mvp.wins}V</div>
+              </div>
+            </div>
+          ) : <div className="pd-insight-value">-</div>}
+        </div>
+        <div className="pd-insight-card">
+          <div className="pd-insight-label">Rodada Atual</div>
+          <div className="pd-insight-value">{currentRound ? `R${currentRound}` : '-'}</div>
+          <span className="material-symbols-outlined pd-insight-bg-icon">stadium</span>
+        </div>
+      </div>
+    );
+  };
+
   const renderRanking = () => (
     <div className="pd-screen pd-ranking">
-      {renderHeader()}
-      <div className="pd-screen-title">
-        <span className="pd-title-icon">🏆</span>
-        CLASSIFICAÇÃO
-      </div>
-      <div className="pd-ranking-table">
-        <div className="pd-rank-header">
-          <span className="pd-rank-pos">#</span>
-          <span className="pd-rank-name">JOGADOR</span>
-          <span className="pd-rank-stat">PTS</span>
-          <span className="pd-rank-stat">J</span>
-          <span className="pd-rank-stat">V</span>
-          <span className="pd-rank-stat">D</span>
+      {renderNavbar()}
+      <div className="pd-main">
+        {renderHero('emoji_events', 'CLASSIFICAÇÃO')}
+        <div className="pd-table-container">
+          <table className="pd-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>JOGADOR</th>
+                <th className="text-right">PTS</th>
+                <th className="text-right">J</th>
+                <th className="text-right">V</th>
+                <th className="text-right">D</th>
+                <th className="col-efic">EFIC.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankings.slice(0, 10).map((r, idx) => {
+                const rank = idx + 1;
+                const rankClass = idx < 3 ? `rank-${rank}` : 'rank-default';
+                const isTop = idx < 3;
+                const eff = r.matches > 0 ? Math.round((r.wins / r.matches) * 100) : 0;
+                return (
+                  <tr key={r.id}>
+                    <td className={`col-rank ${rankClass}`}>{String(rank).padStart(2, '0')}</td>
+                    <td>
+                      <div className="pd-player-cell">
+                        <div className={`pd-player-avatar ${isTop ? 'top' : ''}`}>
+                          {r.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className={`pd-player-name ${isTop ? 'top' : ''}`}>{r.name}</div>
+                      </div>
+                    </td>
+                    <td className={`pd-col-pts ${isTop ? 'top' : ''}`}>{r.points}</td>
+                    <td className="pd-col-stat">{r.matches}</td>
+                    <td className="pd-col-stat pd-col-wins">{r.wins}</td>
+                    <td className="pd-col-stat pd-col-losses">{r.losses}</td>
+                    <td className="pd-col-efic">{eff}%</td>
+                  </tr>
+                );
+              })}
+              {rankings.length === 0 && (
+                <tr>
+                  <td colSpan="7">
+                    <div className="pd-no-data"><p>Aguardando resultados...</p></div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-        {rankings.slice(0, 10).map((r, idx) => (
-          <div key={r.id} className={`pd-rank-row ${idx < 3 ? 'pd-top-' + (idx + 1) : ''}`}>
-            <span className="pd-rank-pos">
-              {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
-            </span>
-            <span className="pd-rank-name">{r.name}</span>
-            <span className="pd-rank-stat pd-rank-pts">{r.points}</span>
-            <span className="pd-rank-stat">{r.matches}</span>
-            <span className="pd-rank-stat pd-rank-wins">{r.wins}</span>
-            <span className="pd-rank-stat pd-rank-losses">{r.losses}</span>
-          </div>
-        ))}
+        {renderStatsGrid()}
       </div>
       {renderFooter()}
     </div>
@@ -302,31 +389,32 @@ function PublicDisplayPage() {
 
   const renderNextMatches = () => (
     <div className="pd-screen pd-next">
-      {renderHeader()}
-      <div className="pd-screen-title">
-        <span className="pd-title-icon">📋</span>
-        {currentRound ? `RODADA ${currentRound} - PRÓXIMAS PARTIDAS` : 'PRÓXIMAS PARTIDAS'}
-      </div>
-      <div className="pd-matches-board">
-        {currentRoundMatches.length > 0 ? (
-          currentRoundMatches.map(match => {
-            const tA = (match.team_a_players || []).map(p => p.name).join(' & ');
-            const tB = (match.team_b_players || []).map(p => p.name).join(' & ');
-            return (
-              <div key={match.id} className="pd-board-row">
-                <span className="pd-board-court">Q{match.court}</span>
-                <span className="pd-board-team pd-board-team-a">{tA}</span>
-                <span className="pd-board-vs">VS</span>
-                <span className="pd-board-team pd-board-team-b">{tB}</span>
-                <span className="pd-board-status">AGUARDANDO</span>
-              </div>
-            );
-          })
-        ) : (
-          <div className="pd-no-data">
-            <p>Nenhuma partida pendente</p>
-          </div>
-        )}
+      {renderNavbar()}
+      <div className="pd-main">
+        {renderHero('schedule', currentRound ? `RODADA ${currentRound}` : 'PRÓXIMAS PARTIDAS')}
+        <div>
+          {currentRoundMatches.length > 0 ? (
+            currentRoundMatches.map(match => {
+              const tA = (match.team_a_players || []).map(p => p.name).join(' & ');
+              const tB = (match.team_b_players || []).map(p => p.name).join(' & ');
+              return (
+                <div key={match.id} className="pd-match-card">
+                  <div className="pd-match-court">Q{match.court}</div>
+                  <div className="pd-match-teams">
+                    <div className="pd-match-team pd-match-team-a">{tA}</div>
+                    <div className="pd-match-vs">VS</div>
+                    <div className="pd-match-team pd-match-team-b">{tB}</div>
+                  </div>
+                  <div className="pd-match-status">AGUARDANDO</div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="pd-no-data">
+              <p>Nenhuma partida pendente</p>
+            </div>
+          )}
+        </div>
       </div>
       {renderFooter()}
     </div>
@@ -334,37 +422,38 @@ function PublicDisplayPage() {
 
   const renderResults = () => (
     <div className="pd-screen pd-results">
-      {renderHeader()}
-      <div className="pd-screen-title">
-        <span className="pd-title-icon">⚡</span>
-        ÚLTIMOS RESULTADOS
-      </div>
-      <div className="pd-results-board">
-        {latestResults.length > 0 ? (
-          latestResults.map(match => {
-            const tA = (match.team_a_players || []).map(p => p.name).join(' & ');
-            const tB = (match.team_b_players || []).map(p => p.name).join(' & ');
-            const aWon = match.score_a > match.score_b;
-            const bWon = match.score_b > match.score_a;
-            return (
-              <div key={match.id} className="pd-result-row">
-                <span className="pd-result-round">R{match.round}</span>
-                <span className={`pd-result-team ${aWon ? 'pd-winner' : ''}`}>{tA}</span>
-                <span className="pd-result-score">
-                  <strong>{match.score_a}</strong>
-                  <span className="pd-result-x">x</span>
-                  <strong>{match.score_b}</strong>
-                </span>
-                <span className={`pd-result-team ${bWon ? 'pd-winner' : ''}`}>{tB}</span>
-                <span className="pd-result-court">Q{match.court}</span>
-              </div>
-            );
-          })
-        ) : (
-          <div className="pd-no-data">
-            <p>Nenhum resultado ainda</p>
-          </div>
-        )}
+      {renderNavbar()}
+      <div className="pd-main">
+        {renderHero('trending_up', 'ÚLTIMOS RESULTADOS')}
+        <div>
+          {latestResults.length > 0 ? (
+            latestResults.map(match => {
+              const tA = (match.team_a_players || []).map(p => p.name).join(' & ');
+              const tB = (match.team_b_players || []).map(p => p.name).join(' & ');
+              const aWon = match.score_a > match.score_b;
+              const bWon = match.score_b > match.score_a;
+              return (
+                <div key={match.id} className="pd-result-card">
+                  <div className="pd-result-round-badge">R{match.round}</div>
+                  <div className="pd-result-teams">
+                    <div className={`pd-result-team-name pd-result-team-a ${aWon ? 'winner' : ''}`}>{tA}</div>
+                    <div className="pd-result-score-box">
+                      <span className="pd-result-score-num">{match.score_a}</span>
+                      <span className="pd-result-score-x">x</span>
+                      <span className="pd-result-score-num">{match.score_b}</span>
+                    </div>
+                    <div className={`pd-result-team-name pd-result-team-b ${bWon ? 'winner' : ''}`}>{tB}</div>
+                  </div>
+                  <div className="pd-result-court-badge">Q{match.court}</div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="pd-no-data">
+              <p>Nenhum resultado ainda</p>
+            </div>
+          )}
+        </div>
       </div>
       {renderFooter()}
     </div>
@@ -470,7 +559,7 @@ function PublicDisplayPage() {
 
   const renderFooter = () => (
     <div className="pd-footer">
-      <div className="pd-footer-left">CÓRTEX BEACH</div>
+      <div className="pd-footer-copy">© CÓRTEX BEACH • ELITE BEACH VOLLEYBALL</div>
       <div className="pd-footer-sponsors">
         {sponsors.length > 0 && (
           <>
@@ -478,18 +567,19 @@ function PublicDisplayPage() {
             {sponsors.map((s, idx) => (
               <span
                 key={s.id}
-                className="pd-footer-sponsor pd-clickable"
+                className="pd-footer-sponsor"
                 onClick={() => handleSponsorClick(idx)}
               >{s.name}</span>
             ))}
           </>
         )}
       </div>
-      <div className="pd-footer-right">
+      <div className="pd-footer-sponsors">
         {tournament.categories?.map(c => (
           <span
             key={c.name}
-            className={`pd-footer-cat pd-clickable ${c.name === selectedCategory ? 'active' : ''}`}
+            className="pd-footer-sponsor"
+            style={c.name === selectedCategory ? { color: 'var(--pd-primary)' } : {}}
             onClick={() => handleCategoryClick(c.name)}
           >{c.name}</span>
         ))}
