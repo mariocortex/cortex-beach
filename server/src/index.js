@@ -6,6 +6,16 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import {
+  createInstance,
+  getQRCode,
+  getInstanceStatus,
+  deleteInstance as deleteEvoInstance,
+  logoutInstance,
+  sendTextMessage,
+  applyTemplate
+} from './evolution.js';
+import { startWhatsappWorker } from './whatsapp-worker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,13 +67,116 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Helper: enfileira mensagens de WhatsApp para os jogadores de um conjunto de
+// partidas (por round). Usa o template da empresa.
+// matches: array de match objects (já persistidos, com team_a_players/team_b_players)
+// triggerType: 'next_match' | 'match_result'
+async function enqueueMatchMessages(tournamentId, matches, triggerType) {
+  if (!matches || matches.length === 0) return;
+  try {
+    const { data: tournament } = await supabase
+      .from('tournaments')
+      .select('id, name, company_id')
+      .eq('id', tournamentId)
+      .single();
+    if (!tournament || !tournament.company_id) return;
+
+    const { data: config } = await supabase
+      .from('whatsapp_configs')
+      .select('*')
+      .eq('company_id', tournament.company_id)
+      .single();
+    if (!config) return;
+
+    const flagField = triggerType === 'match_result' ? 'auto_match_result' : 'auto_next_match';
+    const templateField = triggerType === 'match_result' ? 'template_match_result' : 'template_next_match';
+    if (!config[flagField]) return;
+
+    // Coleta todos os IDs de jogadores para um único fetch
+    const playerIds = new Set();
+    for (const m of matches) {
+      for (const p of (m.team_a_players || [])) if (p.id) playerIds.add(p.id);
+      for (const p of (m.team_b_players || [])) if (p.id) playerIds.add(p.id);
+    }
+    if (playerIds.size === 0) return;
+
+    const { data: playersData } = await supabase
+      .from('players')
+      .select('id, full_name, phone')
+      .in('id', Array.from(playerIds));
+    const playerMap = new Map((playersData || []).map(p => [p.id, p]));
+
+    // Busca categorias dos jogadores neste torneio (para template)
+    const { data: inscriptions } = await supabase
+      .from('tournament_players')
+      .select('player_id, category')
+      .eq('tournament_id', tournamentId)
+      .in('player_id', Array.from(playerIds));
+    const categoryMap = new Map((inscriptions || []).map(i => [i.player_id, i.category]));
+
+    const rows = [];
+    for (const m of matches) {
+      const teamA = (m.team_a_players || []).map(p => p.name || playerMap.get(p.id)?.full_name).filter(Boolean);
+      const teamB = (m.team_b_players || []).map(p => p.name || playerMap.get(p.id)?.full_name).filter(Boolean);
+      const placar = `${m.score_a || 0} x ${m.score_b || 0}`;
+
+      // Para cada jogador, monta adversários (time oposto)
+      const sides = [
+        { players: m.team_a_players || [], adversarios: teamB.join(' & ') },
+        { players: m.team_b_players || [], adversarios: teamA.join(' & ') }
+      ];
+
+      for (const side of sides) {
+        for (const p of side.players) {
+          const full = playerMap.get(p.id);
+          if (!full || !full.phone) continue;
+          const msg = applyTemplate(config[templateField], {
+            nome: full.full_name,
+            torneio: tournament.name,
+            categoria: categoryMap.get(p.id) || m.category || '',
+            quadra: m.court || '',
+            rodada: m.round || '',
+            adversarios: side.adversarios,
+            placar
+          });
+          rows.push({
+            company_id: tournament.company_id,
+            tournament_id: tournamentId,
+            player_id: p.id,
+            phone: full.phone,
+            recipient_name: full.full_name,
+            message: msg,
+            status: 'pending',
+            trigger_type: triggerType,
+            match_id: m.id || null
+          });
+        }
+      }
+    }
+
+    if (rows.length > 0) {
+      await supabase.from('whatsapp_messages').insert(rows);
+      console.log(`[whatsapp] ${rows.length} msgs enfileiradas (${triggerType})`);
+    }
+  } catch (err) {
+    console.error('[whatsapp] enqueueMatchMessages error:', err.message);
+  }
+}
+
 // Helper: extract user from token
+// Token format: "token-{userId}-{timestamp}"
+// userId is a UUID (contains hyphens), timestamp is the last segment (numeric).
 const getUserFromToken = async (token) => {
   if (!token) return null;
-  const cleanToken = token.replace('Bearer ', '');
-  const parts = cleanToken.split('-');
-  if (parts.length < 2) return null;
-  const userId = parts[1];
+  const cleanToken = token.replace('Bearer ', '').trim();
+  if (!cleanToken.startsWith('token-')) return null;
+
+  // Remove "token-" prefix, then strip the trailing "-{timestamp}"
+  const rest = cleanToken.slice(6);
+  const lastDash = rest.lastIndexOf('-');
+  if (lastDash <= 0) return null;
+  const userId = rest.slice(0, lastDash);
+  if (!userId) return null;
 
   const { data, error } = await supabase
     .from('users')
@@ -415,13 +528,14 @@ app.post('/api/tournaments', async (req, res) => {
     console.log('Creating tournament:', req.body);
 
     const user = await getUserFromToken(req.headers.authorization);
-    const organizerId = user?.id || '7a8757b5-3472-4b56-a760-bc3e52a891d5';
+    if (!user) return res.status(401).json({ error: 'Não autenticado' });
+    if (!user.company_id) return res.status(400).json({ error: 'Usuário não está vinculado a uma empresa' });
 
     const { data, error } = await supabase
       .from('tournaments')
       .insert([{
-        organizer_id: organizerId,
-        company_id: user?.company_id || null,
+        organizer_id: user.id,
+        company_id: user.company_id,
         name,
         description: description || null,
         start_date: date,
@@ -597,11 +711,15 @@ app.post('/api/tournaments/:id/players', async (req, res) => {
         .eq('id', req.params.id)
         .single();
 
+      if (!tournament?.company_id) {
+        return res.status(400).json({ error: 'Torneio sem empresa associada — contate o administrador' });
+      }
+
       const playerData = {
         full_name: name,
         email: email || null,
         phone: phone || null,
-        company_id: tournament?.company_id || null
+        company_id: tournament.company_id
       };
       if (birth_date) playerData.birth_date = birth_date;
 
@@ -905,6 +1023,11 @@ app.post('/api/tournaments/:id/generate-all-matches', async (req, res) => {
     if (error) throw error;
 
     console.log(`Generated ${data.length} total matches for tournament ${req.params.id}`);
+
+    // WhatsApp: avisa os jogadores da rodada 1 (assíncrono, não bloqueia a resposta)
+    const firstRoundMatches = data.filter(m => m.round === 1);
+    enqueueMatchMessages(req.params.id, firstRoundMatches, 'next_match').catch(() => {});
+
     res.status(201).json(data);
   } catch (error) {
     console.error('Generate all matches error:', error);
@@ -954,6 +1077,36 @@ app.put('/api/tournaments/:id/matches/:matchId', async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // WhatsApp: se o resultado foi gravado (status=completed), dispara notificações
+    if (data && data.status === 'completed') {
+      // 1. Notifica os 4 jogadores da partida concluída com o placar
+      enqueueMatchMessages(req.params.id, [data], 'match_result').catch(() => {});
+
+      // 2. Se todos os jogos da rodada atual estão completos, avisa jogadores
+      // da próxima rodada.
+      try {
+        const { data: roundMatches } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('tournament_id', req.params.id)
+          .eq('round', data.round);
+        const allDone = roundMatches && roundMatches.every(m => m.status === 'completed');
+        if (allDone) {
+          const nextRound = (data.round || 0) + 1;
+          const { data: nextMatches } = await supabase
+            .from('matches')
+            .select('*')
+            .eq('tournament_id', req.params.id)
+            .eq('round', nextRound)
+            .eq('status', 'pending');
+          if (nextMatches && nextMatches.length > 0) {
+            enqueueMatchMessages(req.params.id, nextMatches, 'next_match').catch(() => {});
+          }
+        }
+      } catch (err) { /* silencioso */ }
+    }
+
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1173,6 +1326,391 @@ app.delete('/api/tournaments/:id/sponsors/:sponsorId', async (req, res) => {
   }
 });
 
+// ==================== WHATSAPP / EVOLUTION API ====================
+
+// Helper: carrega config do WhatsApp da empresa do usuário autenticado.
+async function getWhatsappConfig(user) {
+  if (!user || !user.company_id) return null;
+  const { data } = await supabase
+    .from('whatsapp_configs')
+    .select('*')
+    .eq('company_id', user.company_id)
+    .single();
+  return data;
+}
+
+// GET config da empresa (cria vazia se não existir)
+app.get('/api/whatsapp/config', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    let config = await getWhatsappConfig(user);
+    if (!config) {
+      const { data, error } = await supabase
+        .from('whatsapp_configs')
+        .insert({ company_id: user.company_id })
+        .select()
+        .single();
+      if (error) throw error;
+      config = data;
+    }
+    // Nunca retornar api_key em texto completo — mostra só os últimos 4 dígitos
+    const safeConfig = { ...config };
+    if (safeConfig.api_key) safeConfig.api_key_masked = `••••${safeConfig.api_key.slice(-4)}`;
+    res.json(safeConfig);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST config (salva URL + api_key + instance_name)
+app.post('/api/whatsapp/config', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const { api_url, api_key, instance_name } = req.body;
+    const updateData = {};
+    if (api_url !== undefined) updateData.api_url = api_url;
+    if (api_key !== undefined && api_key !== '') updateData.api_key = api_key;
+    if (instance_name !== undefined) updateData.instance_name = instance_name;
+
+    // upsert por company_id
+    const existing = await getWhatsappConfig(user);
+    let result;
+    if (existing) {
+      const { data, error } = await supabase
+        .from('whatsapp_configs')
+        .update(updateData)
+        .eq('company_id', user.company_id)
+        .select()
+        .single();
+      if (error) throw error;
+      result = data;
+    } else {
+      const { data, error } = await supabase
+        .from('whatsapp_configs')
+        .insert({ company_id: user.company_id, ...updateData })
+        .select()
+        .single();
+      if (error) throw error;
+      result = data;
+    }
+
+    const safe = { ...result };
+    if (safe.api_key) safe.api_key_masked = `••••${safe.api_key.slice(-4)}`;
+    res.json(safe);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST cria instância na Evolution API (primeira conexão)
+app.post('/api/whatsapp/instance/create', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const config = await getWhatsappConfig(user);
+    if (!config || !config.api_url || !config.instance_name) {
+      return res.status(400).json({ error: 'Configure URL e nome da instância primeiro' });
+    }
+
+    let result;
+    try {
+      result = await createInstance(config, config.instance_name);
+    } catch (err) {
+      // Se já existir, tenta só conectar/pegar QR
+      if (err.status === 403 || err.status === 409 || /already|exists/i.test(err.message)) {
+        result = await getQRCode(config);
+      } else {
+        throw err;
+      }
+    }
+
+    // Evolution retorna qrcode em diferentes formatos dependendo da versão
+    const qrBase64 = result?.qrcode?.base64 || result?.base64 || result?.qrcode || null;
+    const pairingCode = result?.qrcode?.pairingCode || result?.pairingCode || null;
+
+    await supabase
+      .from('whatsapp_configs')
+      .update({
+        connection_status: 'connecting',
+        last_qr_code: typeof qrBase64 === 'string' ? qrBase64 : null
+      })
+      .eq('company_id', user.company_id);
+
+    res.json({
+      success: true,
+      qrcode: qrBase64,
+      pairingCode,
+      raw: result
+    });
+  } catch (error) {
+    console.error('[whatsapp] create instance error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET busca QR code atual
+app.get('/api/whatsapp/instance/qrcode', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const config = await getWhatsappConfig(user);
+    if (!config) return res.status(404).json({ error: 'Configuração não encontrada' });
+
+    const result = await getQRCode(config);
+    const qrBase64 = result?.qrcode?.base64 || result?.base64 || result?.qrcode || null;
+    const pairingCode = result?.qrcode?.pairingCode || result?.pairingCode || null;
+
+    if (qrBase64) {
+      await supabase
+        .from('whatsapp_configs')
+        .update({ last_qr_code: typeof qrBase64 === 'string' ? qrBase64 : null })
+        .eq('company_id', user.company_id);
+    }
+
+    res.json({ qrcode: qrBase64, pairingCode });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET estado da conexão
+app.get('/api/whatsapp/instance/status', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const config = await getWhatsappConfig(user);
+    if (!config) return res.json({ connection_status: 'disconnected' });
+    if (!config.api_url || !config.instance_name) {
+      return res.json({ connection_status: config.connection_status || 'disconnected' });
+    }
+
+    let newStatus = config.connection_status || 'disconnected';
+    let phoneNumber = config.phone_number;
+    try {
+      const result = await getInstanceStatus(config);
+      const state = result?.instance?.state || result?.state;
+      if (state === 'open') newStatus = 'connected';
+      else if (state === 'connecting') newStatus = 'connecting';
+      else if (state === 'close') newStatus = 'disconnected';
+      phoneNumber = result?.instance?.wuid || result?.instance?.ownerJid || phoneNumber;
+    } catch (err) {
+      // mantém status anterior mas loga
+      console.error('[whatsapp] status check error:', err.message);
+    }
+
+    await supabase
+      .from('whatsapp_configs')
+      .update({
+        connection_status: newStatus,
+        phone_number: phoneNumber,
+        last_status_check: new Date().toISOString()
+      })
+      .eq('company_id', user.company_id);
+
+    res.json({ connection_status: newStatus, phone_number: phoneNumber });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE desconectar + remover instância
+app.delete('/api/whatsapp/instance', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const config = await getWhatsappConfig(user);
+    if (!config) return res.status(404).json({ error: 'Configuração não encontrada' });
+
+    try {
+      await logoutInstance(config);
+    } catch (err) { /* ignore */ }
+    try {
+      await deleteEvoInstance(config);
+    } catch (err) { /* ignore */ }
+
+    await supabase
+      .from('whatsapp_configs')
+      .update({
+        connection_status: 'disconnected',
+        phone_number: null,
+        last_qr_code: null
+      })
+      .eq('company_id', user.company_id);
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT atualiza flags de automação e templates
+app.put('/api/whatsapp/automations', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const updateData = {};
+    const fields = [
+      'auto_next_match', 'auto_match_result', 'auto_tournament_start',
+      'template_next_match', 'template_match_result', 'template_tournament_start'
+    ];
+    for (const f of fields) {
+      if (req.body[f] !== undefined) updateData[f] = req.body[f];
+    }
+
+    const { data, error } = await supabase
+      .from('whatsapp_configs')
+      .update(updateData)
+      .eq('company_id', user.company_id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST envio manual (aceita array de destinatários)
+// body: { recipients: [{phone, name, player_id?}], message, tournament_id? }
+app.post('/api/whatsapp/send', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const { recipients, message, tournament_id } = req.body;
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ error: 'Informe pelo menos um destinatário' });
+    }
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Mensagem vazia' });
+    }
+
+    const rows = recipients
+      .filter(r => r && r.phone)
+      .map(r => ({
+        company_id: user.company_id,
+        tournament_id: tournament_id || null,
+        player_id: r.player_id || null,
+        phone: r.phone,
+        recipient_name: r.name || null,
+        message: applyTemplate(message, {
+          nome: r.name || '',
+          torneio: r.tournament || '',
+          categoria: r.category || ''
+        }),
+        status: 'pending',
+        trigger_type: 'manual'
+      }));
+
+    if (rows.length === 0) return res.status(400).json({ error: 'Nenhum telefone válido' });
+
+    const { data, error } = await supabase
+      .from('whatsapp_messages')
+      .insert(rows)
+      .select();
+
+    if (error) throw error;
+    res.json({ success: true, queued: data.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST agendar mensagem (mesmo body do /send + scheduled_for)
+app.post('/api/whatsapp/schedule', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const { recipients, message, tournament_id, scheduled_for } = req.body;
+    if (!scheduled_for) return res.status(400).json({ error: 'scheduled_for obrigatório' });
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ error: 'Informe pelo menos um destinatário' });
+    }
+    if (!message || !message.trim()) return res.status(400).json({ error: 'Mensagem vazia' });
+
+    const rows = recipients
+      .filter(r => r && r.phone)
+      .map(r => ({
+        company_id: user.company_id,
+        tournament_id: tournament_id || null,
+        player_id: r.player_id || null,
+        phone: r.phone,
+        recipient_name: r.name || null,
+        message: applyTemplate(message, { nome: r.name || '', torneio: r.tournament || '', categoria: r.category || '' }),
+        status: 'scheduled',
+        scheduled_for,
+        trigger_type: 'scheduled'
+      }));
+
+    if (rows.length === 0) return res.status(400).json({ error: 'Nenhum telefone válido' });
+
+    const { data, error } = await supabase
+      .from('whatsapp_messages')
+      .insert(rows)
+      .select();
+
+    if (error) throw error;
+    res.json({ success: true, scheduled: data.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET histórico de mensagens
+app.get('/api/whatsapp/messages', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const { status, tournament_id, limit = 100 } = req.query;
+    let query = supabase
+      .from('whatsapp_messages')
+      .select('*')
+      .eq('company_id', user.company_id)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit, 10));
+
+    if (status) query = query.eq('status', status);
+    if (tournament_id) query = query.eq('tournament_id', tournament_id);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE mensagem (cancelar agendada)
+app.delete('/api/whatsapp/messages/:id', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user || !user.company_id) return res.status(401).json({ error: 'Não autorizado' });
+
+    const { error } = await supabase
+      .from('whatsapp_messages')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('company_id', user.company_id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // File upload endpoint
 app.post('/api/upload', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
@@ -1186,4 +1724,5 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`✅ Córtex Beach API running on http://localhost:${PORT}`);
+  startWhatsappWorker(supabase);
 });

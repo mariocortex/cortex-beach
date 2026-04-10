@@ -17,6 +17,7 @@ import PlayersPage from './pages/PlayersPage';
 import PlayerProfilePage from './pages/PlayerProfilePage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
 import SponsorsPage from './pages/SponsorsPage';
+import WhatsAppConfigPage from './pages/WhatsAppConfigPage';
 
 // Components
 import Navigation from './components/Navigation';
@@ -131,6 +132,15 @@ function AppContent({ isAuthenticated, user, handleLogin, handleLogout }) {
           element={
             isAuthenticated ?
             <SponsorsPage /> :
+            <Navigate to="/login" replace />
+          }
+        />
+
+        <Route
+          path="/whatsapp"
+          element={
+            isAuthenticated ?
+            <WhatsAppConfigPage /> :
             <Navigate to="/login" replace />
           }
         />

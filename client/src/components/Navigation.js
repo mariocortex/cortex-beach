@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FiMenu, FiX, FiHome, FiCalendar, FiUsers, FiStar, FiSettings, FiLogOut } from 'react-icons/fi';
+import { FiMenu, FiX, FiHome, FiCalendar, FiUsers, FiStar, FiSettings, FiLogOut, FiMessageCircle } from 'react-icons/fi';
 import './Navigation.css';
 
 function Navigation({ user, onLogout }) {
@@ -72,6 +72,17 @@ function Navigation({ user, onLogout }) {
             >
               <FiStar size={20} />
               <span>Patrocinadores</span>
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              to="/whatsapp"
+              className={`navbar-link ${isActive('/whatsapp') ? 'active' : ''}`}
+              onClick={() => setIsOpen(false)}
+            >
+              <FiMessageCircle size={20} />
+              <span>WhatsApp</span>
             </Link>
           </li>
 
