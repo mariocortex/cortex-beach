@@ -1,0 +1,95 @@
+.sponsors-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.sponsors-page .page-header {
+  margin-bottom: 20px;
+}
+
+.sponsors-page .page-header h1 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sponsors-page .search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+}
+
+.sponsors-page .search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+.sponsors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.sponsor-list-card {
+  background: white;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.sponsor-list-card:hover {
+  border-color: var(--color-primary);
+}
+
+.sponsor-list-media {
+  height: 120px;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sponsor-list-media img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.sponsor-list-info {
+  padding: 15px;
+}
+
+.sponsor-list-info h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.sponsor-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sponsor-list-count {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.sponsor-list-desc {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}

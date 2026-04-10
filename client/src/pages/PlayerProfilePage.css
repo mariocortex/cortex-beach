@@ -1,0 +1,221 @@
+.profile-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.profile-header .back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.profile-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+}
+
+.profile-avatar {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.profile-title h1 {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.6rem;
+}
+
+.profile-meta {
+  margin: 4px 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.btn-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-section {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.edit-section h3 {
+  margin: 0 0 15px;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--color-primary);
+}
+
+.edit-section .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.edit-section .form-group {
+  margin-bottom: 15px;
+}
+
+.edit-section .form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.edit-section .form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.edit-section .form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.edit-section .form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.edit-section .form-actions .btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 18px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-top: 3px solid #e5e7eb;
+}
+
+.stat-card.stat-green { border-top-color: #10B981; }
+.stat-card.stat-yellow { border-top-color: #F59E0B; }
+.stat-card.stat-red { border-top-color: #EF4444; }
+.stat-card.stat-blue { border-top-color: #0066CC; }
+
+.stat-value {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.section {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.section h2 {
+  margin: 0 0 15px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.2rem;
+}
+
+.tournaments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tournament-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.tournament-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tournament-item-meta {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.contact-info p {
+  margin: 8px 0;
+  color: #555;
+}
+
+.empty {
+  color: #999;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .edit-section .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

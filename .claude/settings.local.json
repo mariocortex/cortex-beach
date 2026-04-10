@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(findstr \":5001\")",
+      "Bash(powershell -Command \"Stop-Process -Id 33548 -Force\")"
+    ]
+  }
+}

@@ -1,0 +1,715 @@
+/* ========================================
+   PUBLIC DISPLAY - AIRPORT BOARD STYLE
+   ======================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+.pd {
+  width: 100vw;
+  height: 100vh;
+  background: #0a0e1a;
+  color: #e0e6f0;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  position: relative;
+}
+
+/* ============ WATERMARK ============ */
+.pd-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+
+.pd-watermark span:first-child {
+  font-size: 12rem;
+}
+
+.pd-watermark span:last-child {
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: 8px;
+  white-space: nowrap;
+}
+
+.pd-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.pd-logo { font-size: 6rem; margin-bottom: 15px; }
+.pd-loading h1 { font-size: 3rem; margin: 0 0 10px; color: #4dabf7; }
+.pd-loading p { font-size: 1.5rem; opacity: 0.6; }
+.pd-loading-hint { font-size: 1rem; margin-top: 30px; opacity: 0.4; cursor: pointer; }
+.pd-loading { cursor: pointer; }
+
+/* ============ HEADER ============ */
+.pd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 30px;
+  background: linear-gradient(90deg, #0d1526, #162040);
+  border-bottom: 3px solid #1a3060;
+}
+
+.pd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.pd-logo-sm { font-size: 2rem; }
+
+.pd-tournament-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.pd-header-center { flex: 1; text-align: center; }
+
+.pd-category-badge {
+  background: #ff6600;
+  color: white;
+  padding: 6px 20px;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pd-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pd-clock {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #4dabf7;
+  letter-spacing: 2px;
+}
+
+.pd-live-dot {
+  width: 12px;
+  height: 12px;
+  background: #ff3333;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.pd-live-text {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ff3333;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ============ SCREEN ============ */
+.pd-screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  animation: screenFade 0.6s ease-in-out;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes screenFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pd-screen-title {
+  padding: 20px 30px;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #4dabf7;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.pd-title-icon { font-size: 2rem; }
+
+/* ============ RANKING ============ */
+.pd-ranking {
+  background: linear-gradient(180deg, #0a0e1a 0%, #0d1830 100%);
+}
+
+.pd-ranking-table {
+  flex: 1;
+  padding: 0 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pd-rank-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  background: #1a2540;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #6b7fa0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pd-rank-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(20, 30, 55, 0.8);
+  border-radius: 4px;
+  border-left: 4px solid transparent;
+  font-size: 1.4rem;
+  transition: background 0.3s;
+}
+
+.pd-rank-row.pd-top-1 {
+  background: rgba(255, 215, 0, 0.1);
+  border-left-color: #ffd700;
+  font-size: 1.6rem;
+}
+
+.pd-rank-row.pd-top-2 {
+  background: rgba(192, 192, 192, 0.08);
+  border-left-color: #c0c0c0;
+}
+
+.pd-rank-row.pd-top-3 {
+  background: rgba(205, 127, 50, 0.08);
+  border-left-color: #cd7f32;
+}
+
+.pd-rank-pos {
+  width: 80px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.6rem;
+}
+
+.pd-rank-name {
+  flex: 1;
+  font-weight: 600;
+  color: white;
+}
+
+.pd-rank-stat {
+  width: 80px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.pd-rank-pts {
+  color: #4dabf7;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.pd-rank-wins { color: #51cf66; }
+.pd-rank-losses { color: #ff6b6b; }
+
+/* ============ NEXT MATCHES (AIRPORT BOARD) ============ */
+.pd-next {
+  background: linear-gradient(180deg, #0a0e1a 0%, #0a1820 100%);
+}
+
+.pd-matches-board {
+  flex: 1;
+  padding: 0 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pd-board-row {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(15, 25, 50, 0.9);
+  border-radius: 4px;
+  border-left: 5px solid #ffc107;
+  font-size: 1.3rem;
+  animation: boardSlide 0.4s ease-out;
+}
+
+@keyframes boardSlide {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.pd-board-court {
+  width: 80px;
+  background: #1a3060;
+  color: #4dabf7;
+  text-align: center;
+  padding: 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-right: 20px;
+}
+
+.pd-board-team {
+  flex: 1;
+  font-weight: 600;
+  color: white;
+}
+
+.pd-board-team-a { text-align: right; padding-right: 15px; }
+.pd-board-team-b { text-align: left; padding-left: 15px; }
+
+.pd-board-vs {
+  background: #ff6600;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+}
+
+.pd-board-status {
+  width: 150px;
+  text-align: center;
+  color: #ffc107;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ============ RESULTS ============ */
+.pd-results {
+  background: linear-gradient(180deg, #0a0e1a 0%, #1a0a20 100%);
+}
+
+.pd-results-board {
+  flex: 1;
+  padding: 0 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pd-result-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(20, 15, 35, 0.8);
+  border-radius: 4px;
+  border-left: 5px solid #7c3aed;
+  font-size: 1.3rem;
+}
+
+.pd-result-round {
+  width: 60px;
+  background: #2d1b69;
+  color: #a78bfa;
+  text-align: center;
+  padding: 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-right: 15px;
+}
+
+.pd-result-team {
+  flex: 1;
+  font-weight: 500;
+  color: #999;
+}
+
+.pd-result-team.pd-winner {
+  color: #51cf66;
+  font-weight: 700;
+}
+
+.pd-result-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 20px;
+}
+
+.pd-result-x {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.pd-result-court {
+  width: 60px;
+  text-align: center;
+  color: #6b7fa0;
+  font-size: 1rem;
+}
+
+/* ============ SPONSOR ============ */
+.pd-sponsor {
+  background: #000;
+  height: 100vh;
+}
+
+.pd-sponsor-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.pd-sponsor-media {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+}
+
+.pd-sponsor-media img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  display: block;
+}
+
+.pd-sponsor-media video {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  display: block;
+}
+
+.pd-sponsor-name-only {
+  text-align: center;
+}
+
+.pd-sponsor-name-only h2 {
+  font-size: 5rem;
+  color: white;
+  margin: 0 0 20px;
+}
+
+.pd-sponsor-name-only p {
+  font-size: 2rem;
+  color: #999;
+}
+
+/* ============ CAROUSEL ============ */
+.pd-carousel {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.pd-carousel-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hidden state */
+.pd-slide-hidden {
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Active state - all transitions end here */
+.pd-slide-active {
+  opacity: 1;
+  transform: translate(0, 0) scale(1);
+  z-index: 1;
+}
+
+/* === FADE === */
+.pd-transition-fade.pd-slide-active {
+  animation: carouselFade 1.2s ease-out forwards;
+}
+@keyframes carouselFade {
+  0% { opacity: 0; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* === SLIDE LEFT === */
+.pd-transition-slide-left.pd-slide-active {
+  animation: carouselSlideLeft 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes carouselSlideLeft {
+  0% { opacity: 0; transform: translateX(100%); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* === SLIDE RIGHT === */
+.pd-transition-slide-right.pd-slide-active {
+  animation: carouselSlideRight 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes carouselSlideRight {
+  0% { opacity: 0; transform: translateX(-100%); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* === SLIDE TOP === */
+.pd-transition-slide-top.pd-slide-active {
+  animation: carouselSlideTop 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes carouselSlideTop {
+  0% { opacity: 0; transform: translateY(-100%); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* === SLIDE BOTTOM === */
+.pd-transition-slide-bottom.pd-slide-active {
+  animation: carouselSlideBottom 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes carouselSlideBottom {
+  0% { opacity: 0; transform: translateY(100%); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.pd-carousel-dots {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.pd-carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s;
+}
+
+.pd-carousel-dot.active {
+  background: white;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.pd-sponsor-badge {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #333;
+  padding: 10px 30px;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  color: #999;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ============ FOOTER ============ */
+.pd-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 30px;
+  background: #0d1526;
+  border-top: 2px solid #1a3060;
+  font-size: 0.9rem;
+}
+
+.pd-footer-left {
+  font-weight: 700;
+  color: #4dabf7;
+  letter-spacing: 2px;
+}
+
+.pd-footer-sponsors {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6b7fa0;
+}
+
+.pd-footer-sponsor {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 12px;
+  border-radius: 4px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.pd-footer-right {
+  display: flex;
+  gap: 8px;
+}
+
+.pd-footer-cat {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7fa0;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pd-footer-cat.active {
+  background: #ff6600;
+  color: white;
+}
+
+.pd-clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pd-footer-cat.pd-clickable:hover {
+  background: rgba(255, 102, 0, 0.5);
+  color: white;
+  transform: scale(1.05);
+}
+
+.pd-footer-sponsor.pd-clickable:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* ============ SCREEN DOTS ============ */
+.pd-screen-dots {
+  position: absolute;
+  bottom: 55px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.pd-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s;
+}
+
+.pd-dot.active {
+  background: #4dabf7;
+  width: 30px;
+  border-radius: 5px;
+}
+
+/* ============ NO DATA ============ */
+.pd-no-data {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pd-no-data p {
+  font-size: 2rem;
+  color: #444;
+}
+
+/* ============ FULLSCREEN BUTTON ============ */
+.pd-fullscreen-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  z-index: 100;
+  transition: all 0.3s;
+  animation: fadeInBtn 1s ease-in;
+}
+
+.pd-fullscreen-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #4dabf7;
+  transform: scale(1.05);
+}
+
+@keyframes fadeInBtn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Hide scrollbar and overflow in fullscreen */
+.pd:fullscreen {
+  overflow: hidden;
+}
+
+.pd:-webkit-full-screen {
+  overflow: hidden;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1280px) {
+  .pd-tournament-name { font-size: 1.2rem; }
+  .pd-clock { font-size: 1.4rem; }
+  .pd-screen-title { font-size: 1.6rem; }
+  .pd-rank-row { font-size: 1.2rem; padding: 10px 15px; }
+  .pd-rank-row.pd-top-1 { font-size: 1.3rem; }
+  .pd-board-row { font-size: 1.1rem; padding: 12px 15px; }
+  .pd-result-row { font-size: 1.1rem; padding: 10px 15px; }
+  .pd-result-score { font-size: 1.6rem; }
+}
