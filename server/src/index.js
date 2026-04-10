@@ -72,6 +72,13 @@ app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
 // Supabase initialization
+console.log('[env] SUPABASE_URL present?', !!process.env.SUPABASE_URL, 'len=', (process.env.SUPABASE_URL || '').length);
+console.log('[env] SUPABASE_KEY present?', !!process.env.SUPABASE_KEY);
+console.log('[env] keys starting with SUPA:', Object.keys(process.env).filter(k => k.toUpperCase().includes('SUPA')));
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+  console.error('[FATAL] SUPABASE_URL/SUPABASE_KEY ausentes no ambiente. Verifique Environment Variables do serviço no Easypanel e faça Redeploy.');
+  process.exit(1);
+}
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
