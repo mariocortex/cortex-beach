@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiSave, FiCreditCard, FiUsers, FiUserPlus, FiTrash2 } from 'react-icons/fi';
 import './CompanySettingsPage.css';
+import { API_BASE } from '../config';
 
 function CompanySettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -21,10 +22,10 @@ function CompanySettingsPage() {
   const fetchAll = async () => {
     try {
       const [compRes, usersRes] = await Promise.all([
-        fetch('http://localhost:5001/api/company', {
+        fetch(`${API_BASE}/company`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }),
-        fetch('http://localhost:5001/api/company/users', {
+        fetch(`${API_BASE}/company/users`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
@@ -54,7 +55,7 @@ function CompanySettingsPage() {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch('http://localhost:5001/api/company', {
+      const res = await fetch(`${API_BASE}/company`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ function CompanySettingsPage() {
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:5001/api/company/users', {
+      const res = await fetch(`${API_BASE}/company/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +103,7 @@ function CompanySettingsPage() {
   const handleRemoveUser = async (userId) => {
     if (!window.confirm('Remover este usuário?')) return;
     try {
-      const res = await fetch(`http://localhost:5001/api/company/users/${userId}`, {
+      const res = await fetch(`${API_BASE}/company/users/${userId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });

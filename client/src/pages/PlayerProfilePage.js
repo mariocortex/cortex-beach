@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiEdit2, FiSave, FiX } from 'react-icons/fi';
 import './PlayerProfilePage.css';
+import { API_BASE } from '../config';
 
 function PlayerProfilePage() {
   const { playerId } = useParams();
@@ -19,7 +20,7 @@ function PlayerProfilePage() {
 
   const fetchPlayer = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/players/${playerId}/stats`, {
+      const res = await fetch(`${API_BASE}/players/${playerId}/stats`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
@@ -43,7 +44,7 @@ function PlayerProfilePage() {
 
   const handleSave = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/players/${playerId}`, {
+      const res = await fetch(`${API_BASE}/players/${playerId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

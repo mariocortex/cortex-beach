@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiCheck, FiPlay, FiRefreshCw, FiEdit2, FiX } from 'react-icons/fi';
 import './ControlPanelPage.css';
+import { API_BASE } from '../config';
 
 function ControlPanelPage() {
   const { id } = useParams();
@@ -22,13 +23,13 @@ function ControlPanelPage() {
   const fetchData = async () => {
     try {
       const [tourRes, playersRes, matchesRes] = await Promise.all([
-        fetch(`http://localhost:5001/api/tournaments/${id}`, {
+        fetch(`${API_BASE}/tournaments/${id}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }),
-        fetch(`http://localhost:5001/api/tournaments/${id}/players`, {
+        fetch(`${API_BASE}/tournaments/${id}/players`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }),
-        fetch(`http://localhost:5001/api/tournaments/${id}/matches`, {
+        fetch(`${API_BASE}/tournaments/${id}/matches`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
@@ -86,7 +87,7 @@ function ControlPanelPage() {
     setGenerating(true);
     try {
       // First set status to active
-      await fetch(`http://localhost:5001/api/tournaments/${id}`, {
+      await fetch(`${API_BASE}/tournaments/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ function ControlPanelPage() {
       });
 
       // Then generate all matches
-      const res = await fetch(`http://localhost:5001/api/tournaments/${id}/generate-all-matches`, {
+      const res = await fetch(`${API_BASE}/tournaments/${id}/generate-all-matches`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ function ControlPanelPage() {
     if (!window.confirm('Isso vai apagar todas as partidas existentes e gerar novamente. Continuar?')) return;
     setGenerating(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/tournaments/${id}/generate-all-matches`, {
+      const res = await fetch(`${API_BASE}/tournaments/${id}/generate-all-matches`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +143,7 @@ function ControlPanelPage() {
 
   const submitScore = async (matchId, scoreA, scoreB) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/tournaments/${id}/matches/${matchId}`, {
+      const res = await fetch(`${API_BASE}/tournaments/${id}/matches/${matchId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +163,7 @@ function ControlPanelPage() {
 
   const updateMatchPlayers = async (matchId, teamAPlayers, teamBPlayers) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/tournaments/${id}/matches/${matchId}/players`, {
+      const res = await fetch(`${API_BASE}/tournaments/${id}/matches/${matchId}/players`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import './PlayerRegistrationPage.css';
+import { API_BASE } from '../config';
 
 function PlayerRegistrationPage() {
   const { id } = useParams();
@@ -22,7 +23,7 @@ function PlayerRegistrationPage() {
 
   const fetchTournament = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/tournaments/${id}`);
+      const res = await fetch(`${API_BASE}/tournaments/${id}`);
       if (res.ok) {
         setTournament(await res.json());
       }
@@ -36,7 +37,7 @@ function PlayerRegistrationPage() {
   const searchPlayers = async (query) => {
     if (query.length < 2) { setSearchResults([]); return; }
     try {
-      const res = await fetch(`http://localhost:5001/api/players/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(query)}`);
       if (res.ok) setSearchResults(await res.json());
     } catch (err) { console.error(err); }
   };
@@ -74,7 +75,7 @@ function PlayerRegistrationPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5001/api/tournaments/${id}/players`, {
+      const res = await fetch(`${API_BASE}/tournaments/${id}/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)

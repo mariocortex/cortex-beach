@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight } from 'react-icons/fi';
 import './TournamentCreatePage.css';
+import { API_BASE } from '../config';
 
 function TournamentCreatePage() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ function TournamentCreatePage() {
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/tournaments', {
+      const response = await fetch(`${API_BASE}/tournaments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

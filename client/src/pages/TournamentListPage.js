@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
 import './TournamentListPage.css';
+import { API_BASE } from '../config';
 
 function TournamentListPage() {
   const [tournaments, setTournaments] = useState([]);
@@ -16,7 +17,7 @@ function TournamentListPage() {
   const fetchTournaments = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5001/api/tournaments', {
+      const response = await fetch(`${API_BASE}/tournaments`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

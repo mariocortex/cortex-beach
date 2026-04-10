@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import './PublicDisplayPage.css';
+import { API_BASE } from '../config';
 
 function PublicDisplayPage() {
   const { tournamentId } = useParams();
@@ -42,9 +43,9 @@ function PublicDisplayPage() {
   const fetchData = useCallback(async () => {
     try {
       const [tourRes, matchRes, sponsorRes] = await Promise.all([
-        fetch(`http://localhost:5001/api/tournaments/${tournamentId}`),
-        fetch(`http://localhost:5001/api/tournaments/${tournamentId}/matches`),
-        fetch(`http://localhost:5001/api/tournaments/${tournamentId}/sponsors/active`)
+        fetch(`${API_BASE}/tournaments/${tournamentId}`),
+        fetch(`${API_BASE}/tournaments/${tournamentId}/matches`),
+        fetch(`${API_BASE}/tournaments/${tournamentId}/sponsors/active`)
       ]);
 
       if (tourRes.ok) {

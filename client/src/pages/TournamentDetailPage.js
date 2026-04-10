@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiUsers, FiPlay, FiUserPlus, FiCopy, FiX, FiTrash2, FiStar, FiPlus, FiEdit2 } from 'react-icons/fi';
 import './TournamentDetailPage.css';
+import { API_BASE } from '../config';
 
 function TournamentDetailPage() {
   const { id } = useParams();
@@ -35,13 +36,13 @@ function TournamentDetailPage() {
     try {
       setLoading(true);
       const [tourRes, playersRes, sponsorsRes] = await Promise.all([
-        fetch(`http://localhost:5001/api/tournaments/${id}`, {
+        fetch(`${API_BASE}/tournaments/${id}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }),
-        fetch(`http://localhost:5001/api/tournaments/${id}/players`, {
+        fetch(`${API_BASE}/tournaments/${id}/players`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }),
-        fetch(`http://localhost:5001/api/tournaments/${id}/sponsors`, {
+        fetch(`${API_BASE}/tournaments/${id}/sponsors`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
       ]);
@@ -67,7 +68,7 @@ function TournamentDetailPage() {
   const handleAddPlayer = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:5001/api/tournaments/${id}/players`, {
+      const response = await fetch(`${API_BASE}/tournaments/${id}/players`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,7 +92,7 @@ function TournamentDetailPage() {
   const handleRemovePlayer = async (playerId) => {
     if (!window.confirm('Remover este jogador?')) return;
     try {
-      const response = await fetch(`http://localhost:5001/api/tournaments/${id}/players/${playerId}`, {
+      const response = await fetch(`${API_BASE}/tournaments/${id}/players/${playerId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -106,7 +107,7 @@ function TournamentDetailPage() {
   const searchPlayers = async (query) => {
     if (query.length < 2) { setSearchResults([]); return; }
     try {
-      const res = await fetch(`http://localhost:5001/api/players/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(query)}`);
       if (res.ok) setSearchResults(await res.json());
     } catch (err) { console.error(err); }
   };
@@ -548,7 +549,7 @@ function TournamentDetailPage() {
                             onClick={async () => {
                               const newStatus = player.payment_status === 'paid' ? 'pending' : 'paid';
                               try {
-                                const res = await fetch(`http://localhost:5001/api/tournaments/${id}/players/${player.id}`, {
+                                const res = await fetch(`${API_BASE}/tournaments/${id}/players/${player.id}`, {
                                   method: 'PUT',
                                   headers: {
                                     'Content-Type': 'application/json',
@@ -605,7 +606,7 @@ function TournamentDetailPage() {
                             onClick={async () => {
                               const newStatus = s.payment_status === 'paid' ? 'pending' : 'paid';
                               try {
-                                const res = await fetch(`http://localhost:5001/api/tournaments/${id}/sponsors/${s.id}`, {
+                                const res = await fetch(`${API_BASE}/tournaments/${id}/sponsors/${s.id}`, {
                                   method: 'PUT',
                                   headers: {
                                     'Content-Type': 'application/json',
@@ -652,7 +653,7 @@ function TournamentDetailPage() {
                 try {
                   if (editingSponsorId) {
                     // Update existing
-                    const res = await fetch(`http://localhost:5001/api/tournaments/${id}/sponsors/${editingSponsorId}`, {
+                    const res = await fetch(`${API_BASE}/tournaments/${id}/sponsors/${editingSponsorId}`, {
                       method: 'PUT',
                       headers: {
                         'Content-Type': 'application/json',
@@ -667,7 +668,7 @@ function TournamentDetailPage() {
                     }
                   } else {
                     // Create new
-                    const res = await fetch(`http://localhost:5001/api/tournaments/${id}/sponsors`, {
+                    const res = await fetch(`${API_BASE}/tournaments/${id}/sponsors`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
@@ -700,7 +701,7 @@ function TournamentDetailPage() {
                           setSponsorSearchTimeout(setTimeout(async () => {
                             if (val.length < 2) { setSponsorSearchResults([]); return; }
                             try {
-                              const res = await fetch(`http://localhost:5001/api/sponsors/search?q=${encodeURIComponent(val)}`);
+                              const res = await fetch(`${API_BASE}/sponsors/search?q=${encodeURIComponent(val)}`);
                               if (res.ok) setSponsorSearchResults(await res.json());
                             } catch (err) { console.error(err); }
                           }, 300));
@@ -806,7 +807,7 @@ function TournamentDetailPage() {
                             const formData = new FormData();
                             formData.append('file', file);
                             try {
-                              const res = await fetch('http://localhost:5001/api/upload', { method: 'POST', body: formData });
+                              const res = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
                               if (res.ok) {
                                 const data = await res.json();
                                 setSponsorForm(prev => ({ ...prev, media_urls: [...prev.media_urls, { url: data.media_url, type: data.media_type }] }));
@@ -947,7 +948,7 @@ function TournamentDetailPage() {
                           onClick={async () => {
                             const newStatus = s.payment_status === 'paid' ? 'pending' : 'paid';
                             try {
-                              const res = await fetch(`http://localhost:5001/api/tournaments/${id}/sponsors/${s.id}`, {
+                              const res = await fetch(`${API_BASE}/tournaments/${id}/sponsors/${s.id}`, {
                                 method: 'PUT',
                                 headers: {
                                   'Content-Type': 'application/json',
@@ -968,7 +969,7 @@ function TournamentDetailPage() {
                         className={`btn btn-sm ${s.is_active ? 'btn-outline' : 'btn-primary'}`}
                         onClick={async () => {
                           try {
-                            const res = await fetch(`http://localhost:5001/api/tournaments/${id}/sponsors/${s.id}`, {
+                            const res = await fetch(`${API_BASE}/tournaments/${id}/sponsors/${s.id}`, {
                               method: 'PUT',
                               headers: {
                                 'Content-Type': 'application/json',
@@ -989,7 +990,7 @@ function TournamentDetailPage() {
                         onClick={async () => {
                           if (!window.confirm('Remover este patrocinador?')) return;
                           try {
-                            const res = await fetch(`http://localhost:5001/api/tournaments/${id}/sponsors/${s.id}`, {
+                            const res = await fetch(`${API_BASE}/tournaments/${id}/sponsors/${s.id}`, {
                               method: 'DELETE',
                               headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                             });

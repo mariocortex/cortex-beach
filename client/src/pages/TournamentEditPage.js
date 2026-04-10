@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiArrowLeft } from 'react-icons/fi';
 import './TournamentEditPage.css';
+import { API_BASE } from '../config';
 
 function TournamentEditPage() {
   const { id } = useParams();
@@ -28,7 +29,7 @@ function TournamentEditPage() {
   const fetchTournament = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5001/api/tournaments/${id}`, {
+      const response = await fetch(`${API_BASE}/tournaments/${id}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
 
@@ -81,7 +82,7 @@ function TournamentEditPage() {
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/tournaments/${id}`, {
+      const response = await fetch(`${API_BASE}/tournaments/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

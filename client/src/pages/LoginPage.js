@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiMail, FiLock } from 'react-icons/fi';
 import './LoginPage.css';
+import { API_BASE } from '../config';
 
 function LoginPage({ onLogin }) {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ function LoginPage({ onLogin }) {
 
     try {
       // Call backend API
-      const response = await fetch('http://localhost:5001/api/auth/login', {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiUser, FiMail, FiLock, FiBriefcase } from 'react-icons/fi';
 import './LoginPage.css';
+import { API_BASE } from '../config';
 
 function SignupPage({ onLogin }) {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ function SignupPage({ onLogin }) {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/auth/signup', {
+      const res = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

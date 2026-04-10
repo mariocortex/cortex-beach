@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiSearch, FiUser } from 'react-icons/fi';
 import './PlayersPage.css';
+import { API_BASE } from '../config';
 
 function PlayersPage() {
   const [players, setPlayers] = useState([]);
@@ -14,7 +15,7 @@ function PlayersPage() {
 
   const fetchPlayers = async () => {
     try {
-      const res = await fetch('http://localhost:5001/api/players', {
+      const res = await fetch(`${API_BASE}/players`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) setPlayers(await res.json());

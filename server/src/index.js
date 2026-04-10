@@ -23,7 +23,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: '../.env' });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -49,8 +49,22 @@ const upload = multer({
   }
 });
 
-// Middleware
-app.use(cors());
+// Middleware — CORS configurável via CORS_ORIGIN (aceita CSV de origens)
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5000,http://localhost:3000')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // Permite requests sem origin (ex: curl, mobile apps) ou origens listadas
+    if (!origin || corsOrigins.includes('*') || corsOrigins.includes(origin)) {
+      return cb(null, true);
+    }
+    return cb(new Error(`CORS bloqueado para origem: ${origin}`));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve uploaded files

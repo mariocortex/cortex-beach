@@ -4,8 +4,7 @@ import {
   FiLogOut, FiCheckCircle, FiAlertCircle, FiClock, FiTrash2, FiPlus
 } from 'react-icons/fi';
 import './WhatsAppConfigPage.css';
-
-const API_BASE = 'http://localhost:5001/api';
+import { API_BASE } from '../config';
 
 const VARIABLE_HINTS = [
   { key: '{nome}', desc: 'Nome do jogador' },

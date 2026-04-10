@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiSearch, FiStar } from 'react-icons/fi';
 import './SponsorsPage.css';
+import { API_BASE } from '../config';
 
 function SponsorsPage() {
   const [sponsors, setSponsors] = useState([]);
@@ -13,7 +14,7 @@ function SponsorsPage() {
 
   const fetchSponsors = async () => {
     try {
-      const res = await fetch('http://localhost:5001/api/sponsors', {
+      const res = await fetch(`${API_BASE}/sponsors`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) setSponsors(await res.json());
