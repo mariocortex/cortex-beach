@@ -116,7 +116,7 @@ function DashboardPage({ user }) {
                   </span>
                 </div>
                 <p className="tournament-date">
-                  📅 {new Date(tournament.date).toLocaleDateString('pt-BR')}
+                  📅 {tournament.start_date ? new Date(tournament.start_date).toLocaleDateString('pt-BR') : 'Sem data'}
                 </p>
                 <div className="tournament-meta">
                   <span>{tournament.player_count || 0} jogadores</span>
