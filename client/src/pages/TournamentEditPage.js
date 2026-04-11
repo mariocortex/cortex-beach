@@ -11,6 +11,7 @@ function TournamentEditPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
+    slug: '',
     description: '',
     start_date: '',
     type: 'super_oito',
@@ -38,6 +39,7 @@ function TournamentEditPage() {
         console.log('Fetched tournament:', tournament);
         setFormData({
           name: tournament.name,
+          slug: tournament.slug || '',
           description: tournament.description || '',
           start_date: tournament.start_date ? tournament.start_date.split('T')[0] + 'T' + tournament.start_date.split('T')[1]?.substring(0, 5) : '',
           type: tournament.type || 'super_oito',
@@ -130,6 +132,25 @@ function TournamentEditPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
+              </div>
+
+              <div className="form-group">
+                <label>URL do Painel Público (slug)</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '2px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+                  <span style={{ padding: '10px 12px', background: '#f9fafb', color: '#6b7280', fontSize: '0.85rem', borderRight: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}>
+                    /display/
+                  </span>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="rei-da-pascoa-2026"
+                    style={{ border: 'none', flex: 1, padding: '10px 12px', outline: 'none' }}
+                  />
+                </div>
+                <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                  Use letras minúsculas, números e hífens. Exemplo: <code>rei-da-pascoa-2026</code>. O link público ficará <code>https://btenis.cortexsolucoes.com.br/display/{formData.slug || 'seu-slug'}</code>
+                </small>
               </div>
 
               <div className="form-group">

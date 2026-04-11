@@ -293,7 +293,7 @@ function TournamentDetailPage() {
                   <FiPlay size={20} />
                   Painel de Controle
                 </Link>
-                <a href={`/display/${id}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                <a href={`/display/${tournament.slug || id}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
                   Ver Painel Público
                 </a>
               </div>

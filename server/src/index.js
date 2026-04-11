@@ -89,6 +89,50 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// ============================================
+// Slug helpers (URL amigavel de torneio)
+// ============================================
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function slugify(str) {
+  if (!str) return '';
+  return str
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')   // remove acentos
+    .replace(/[^a-z0-9\s-]/g, '')      // remove caracteres especiais
+    .trim()
+    .replace(/\s+/g, '-')              // espacos -> hifen
+    .replace(/-+/g, '-');              // colapsa hifens repetidos
+}
+
+async function generateUniqueSlug(name, excludeId = null) {
+  const base = slugify(name) || 'torneio';
+  let slug = base;
+  let i = 2;
+  while (true) {
+    let q = supabase.from('tournaments').select('id').eq('slug', slug).limit(1);
+    if (excludeId) q = q.neq('id', excludeId);
+    const { data } = await q;
+    if (!data || data.length === 0) return slug;
+    slug = `${base}-${i++}`;
+  }
+}
+
+// Resolve um parametro que pode ser UUID ou slug para o UUID real do torneio.
+// Retorna null se nao encontrar. Faz lookup so quando nao e UUID.
+async function resolveTournamentId(idOrSlug) {
+  if (!idOrSlug) return null;
+  if (UUID_RE.test(idOrSlug)) return idOrSlug;
+  const { data } = await supabase
+    .from('tournaments')
+    .select('id')
+    .eq('slug', idOrSlug)
+    .single();
+  return data?.id || null;
+}
+
 // Helper: enfileira mensagens de WhatsApp para os jogadores de um conjunto de
 // partidas (por round). Usa o template da empresa.
 // matches: array de match objects (já persistidos, com team_a_players/team_b_players)
@@ -516,12 +560,16 @@ app.get('/api/tournaments', async (req, res) => {
 });
 
 // Get single tournament (includes company info)
+// Aceita UUID ou slug em :id
 app.get('/api/tournaments/:id', async (req, res) => {
   try {
+    const realId = await resolveTournamentId(req.params.id);
+    if (!realId) return res.status(404).json({ error: 'Torneio não encontrado' });
+
     const { data, error } = await supabase
       .from('tournaments')
       .select('*')
-      .eq('id', req.params.id)
+      .eq('id', realId)
       .single();
 
     if (error) throw error;
@@ -553,12 +601,15 @@ app.post('/api/tournaments', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Não autenticado' });
     if (!user.company_id) return res.status(400).json({ error: 'Usuário não está vinculado a uma empresa' });
 
+    const slug = await generateUniqueSlug(name);
+
     const { data, error } = await supabase
       .from('tournaments')
       .insert([{
         organizer_id: user.id,
         company_id: user.company_id,
         name,
+        slug,
         description: description || null,
         start_date: date,
         type: type || 'super_oito',
@@ -601,12 +652,23 @@ app.put('/api/tournaments/:id', async (req, res) => {
     if (req.body.category_display_time !== undefined) updateData.category_display_time = req.body.category_display_time;
     if (req.body.status !== undefined) updateData.status = req.body.status;
 
-    console.log('Updating tournament', req.params.id, 'with data:', JSON.stringify(updateData, null, 2));
+    const realId = await resolveTournamentId(req.params.id);
+    if (!realId) return res.status(404).json({ error: 'Torneio não encontrado' });
+
+    // Slug editavel: sanitiza e garante unicidade
+    if (req.body.slug !== undefined) {
+      const cleaned = slugify(req.body.slug);
+      if (!cleaned) return res.status(400).json({ error: 'Slug invalido (use letras, numeros e hifens)' });
+      const unique = await generateUniqueSlug(cleaned, realId);
+      updateData.slug = unique;
+    }
+
+    console.log('Updating tournament', realId, 'with data:', JSON.stringify(updateData, null, 2));
 
     const { data, error } = await supabase
       .from('tournaments')
       .update(updateData)
-      .eq('id', req.params.id)
+      .eq('id', realId)
       .select()
       .single();
 
@@ -907,13 +969,16 @@ app.get('/api/players/:playerId/stats', async (req, res) => {
 
 // ==================== MATCHES ====================
 
-// Get matches
+// Get matches — aceita UUID ou slug (rota publica)
 app.get('/api/tournaments/:id/matches', async (req, res) => {
   try {
+    const realId = await resolveTournamentId(req.params.id);
+    if (!realId) return res.status(404).json({ error: 'Torneio não encontrado' });
+
     const { data, error } = await supabase
       .from('matches')
       .select('*')
-      .eq('tournament_id', req.params.id)
+      .eq('tournament_id', realId)
       .order('round', { ascending: true });
 
     if (error) throw error;
@@ -1242,13 +1307,16 @@ app.get('/api/tournaments/:id/sponsors', async (req, res) => {
   }
 });
 
-// Get active sponsors (public - for display)
+// Get active sponsors (public - for display) — aceita UUID ou slug
 app.get('/api/tournaments/:id/sponsors/active', async (req, res) => {
   try {
+    const realId = await resolveTournamentId(req.params.id);
+    if (!realId) return res.status(404).json({ error: 'Torneio não encontrado' });
+
     const { data, error } = await supabase
       .from('sponsors')
       .select('*')
-      .eq('tournament_id', req.params.id)
+      .eq('tournament_id', realId)
       .eq('is_active', true)
       .order('created_at');
 
