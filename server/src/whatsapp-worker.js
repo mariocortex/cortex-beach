@@ -13,6 +13,7 @@ import { sendTextMessage, getInstanceStatus, applyTemplate } from './evolution.j
 
 const MAX_RETRIES = 3;
 const BATCH_SIZE = 20;
+const STALE_PROCESSING_MIN = 5; // reclama msgs travadas em 'processing' ha mais de X min
 
 export function startWhatsappWorker(supabase) {
   console.log('[whatsapp-worker] iniciando...');
@@ -51,14 +52,24 @@ export function startWhatsappWorker(supabase) {
 // ============================================
 // 1. PROCESSA FILA
 // ============================================
+// Locking strategy: antes de enviar, marca a msg como 'processing'
+// num UPDATE atomico condicionado ao status anterior. Se outra
+// execucao do cron ja pegou a msg, nossa claim retorna 0 linhas
+// e a msg e ignorada. Msgs 'processing' presas por mais de
+// STALE_PROCESSING_MIN minutos sao re-reivindicadas (crash recovery).
 async function processQueue(supabase) {
   const nowIso = new Date().toISOString();
+  const staleIso = new Date(Date.now() - STALE_PROCESSING_MIN * 60 * 1000).toISOString();
 
-  // Pega mensagens pending OU scheduled com hora vencida
+  // Candidatos: pending, scheduled vencidos, ou processing travado
   const { data: msgs, error } = await supabase
     .from('whatsapp_messages')
     .select('*')
-    .or(`status.eq.pending,and(status.eq.scheduled,scheduled_for.lte.${nowIso})`)
+    .or(
+      `status.eq.pending,` +
+      `and(status.eq.scheduled,scheduled_for.lte.${nowIso}),` +
+      `and(status.eq.processing,updated_at.lte.${staleIso})`
+    )
     .lt('retry_count', MAX_RETRIES)
     .limit(BATCH_SIZE)
     .order('created_at', { ascending: true });
@@ -69,9 +80,37 @@ async function processQueue(supabase) {
   }
   if (!msgs || msgs.length === 0) return;
 
-  // Agrupa por company_id para carregar config uma só vez
-  const byCompany = new Map();
+  // Tenta travar cada mensagem atomicamente (claim).
+  // Para msgs 'processing' stale, a claim tambem precisa checar
+  // que updated_at ainda e antigo, para evitar roubar de outro
+  // worker que acabou de comecar.
+  const locked = [];
   for (const m of msgs) {
+    let claimQuery = supabase
+      .from('whatsapp_messages')
+      .update({ status: 'processing' })
+      .eq('id', m.id)
+      .eq('status', m.status);
+
+    if (m.status === 'processing') {
+      claimQuery = claimQuery.lte('updated_at', staleIso);
+    }
+
+    const { data: claimed, error: claimErr } = await claimQuery.select();
+    if (claimErr) {
+      console.error('[whatsapp-worker] erro no claim:', claimErr.message);
+      continue;
+    }
+    if (claimed && claimed.length > 0) {
+      locked.push(claimed[0]);
+    }
+  }
+
+  if (locked.length === 0) return;
+
+  // Agrupa por company_id para carregar config uma so vez
+  const byCompany = new Map();
+  for (const m of locked) {
     if (!byCompany.has(m.company_id)) byCompany.set(m.company_id, []);
     byCompany.get(m.company_id).push(m);
   }
@@ -84,13 +123,16 @@ async function processQueue(supabase) {
       .single();
 
     if (!config || config.connection_status !== 'connected') {
-      // Marca como falha temporária, incrementa retry
+      // Devolve as msgs para pending (ou failed se estourou retry)
       for (const m of list) {
+        const newRetry = (m.retry_count || 0) + 1;
+        const finalStatus = newRetry >= MAX_RETRIES ? 'failed' : 'pending';
         await supabase
           .from('whatsapp_messages')
           .update({
-            retry_count: (m.retry_count || 0) + 1,
-            error_message: config ? 'Instância não conectada' : 'Config não encontrada'
+            status: finalStatus,
+            retry_count: newRetry,
+            error_message: config ? 'Instancia nao conectada' : 'Config nao encontrada'
           })
           .eq('id', m.id);
       }
@@ -111,7 +153,7 @@ async function processQueue(supabase) {
           .eq('id', m.id);
       } catch (err) {
         const newRetry = (m.retry_count || 0) + 1;
-        const finalStatus = newRetry >= MAX_RETRIES ? 'failed' : m.status;
+        const finalStatus = newRetry >= MAX_RETRIES ? 'failed' : 'pending';
         await supabase
           .from('whatsapp_messages')
           .update({
