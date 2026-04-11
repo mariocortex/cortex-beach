@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiCheck, FiPlay, FiRefreshCw, FiEdit2, FiX } from 'react-icons/fi';
 import './ControlPanelPage.css';
 import { API_BASE } from '../config';
 
 function ControlPanelPage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'ranking' ? 'ranking' : 'matches';
   const [tournament, setTournament] = useState(null);
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [rankings, setRankings] = useState([]);
-  const [tab, setTab] = useState('matches');
+  const [tab, setTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [generating, setGenerating] = useState(false);

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus, FiCalendar, FiUsers, FiTrendingUp } from 'react-icons/fi';
 import './DashboardPage.css';
 import { API_BASE } from '../config';
 
 function DashboardPage({ user }) {
-  const [tournaments, setTournaments] = useState([]);
+  const [allTournaments, setAllTournaments] = useState([]);
   const [stats, setStats] = useState({
     activeTournaments: 0,
     totalPlayers: 0,
@@ -28,7 +28,7 @@ function DashboardPage({ user }) {
 
       if (response.ok) {
         const data = await response.json();
-        setTournaments(data.slice(0, 5));
+        setAllTournaments(data);
 
         setStats({
           activeTournaments: data.filter(t => t.status === 'active').length,
@@ -42,6 +42,17 @@ function DashboardPage({ user }) {
       setLoading(false);
     }
   };
+
+  const tournaments = allTournaments.slice(0, 5);
+
+  // Torneio alvo pra estatisticas: o 1o ativo, senao o mais recente.
+  const statsTarget = useMemo(() => {
+    return allTournaments.find(t => t.status === 'active') || allTournaments[0] || null;
+  }, [allTournaments]);
+
+  const statsLink = statsTarget
+    ? `/tournaments/${statsTarget.id}/control?tab=ranking`
+    : '/tournaments';
 
   return (
     <div className="dashboard">
@@ -147,9 +158,9 @@ function DashboardPage({ user }) {
             <span className="action-icon">👥</span>
             <span>Gerenciar Jogadores</span>
           </Link>
-          <Link to="/sponsors" className="action-btn">
-            <span className="action-icon">⭐</span>
-            <span>Patrocinadores</span>
+          <Link to={statsLink} className="action-btn">
+            <span className="action-icon">📊</span>
+            <span>Ver Estatísticas</span>
           </Link>
           <Link to="/settings" className="action-btn">
             <span className="action-icon">⚙️</span>
