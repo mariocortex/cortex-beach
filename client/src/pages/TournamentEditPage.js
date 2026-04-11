@@ -9,6 +9,7 @@ function TournamentEditPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(1);
+  const [tournamentStatus, setTournamentStatus] = useState('draft');
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -21,6 +22,8 @@ function TournamentEditPage() {
     category_display_time: 60,
     pricing: { first_registration: 0, additional_registration: 0 }
   });
+
+  const isActive = tournamentStatus === 'active';
 
   useEffect(() => {
     fetchTournament();
@@ -37,6 +40,7 @@ function TournamentEditPage() {
       if (response.ok) {
         const tournament = await response.json();
         console.log('Fetched tournament:', tournament);
+        setTournamentStatus(tournament.status || 'draft');
         setFormData({
           name: tournament.name,
           slug: tournament.slug || '',
@@ -122,6 +126,21 @@ function TournamentEditPage() {
         </div>
 
         <div className="wizard-body">
+          {isActive && (
+            <div style={{
+              background: '#fef3c7',
+              border: '1px solid #fde68a',
+              color: '#92400e',
+              padding: '12px 16px',
+              borderRadius: 8,
+              marginBottom: 20,
+              fontSize: '0.88rem',
+              lineHeight: 1.5
+            }}>
+              <strong>Torneio em andamento.</strong> Alguns campos que afetam partidas e ranking estão travados (tipo, categorias, regras de pontuação). Os demais campos podem ser alterados livremente.
+            </div>
+          )}
+
           {step === 1 && (
             <div className="step-content">
               <h2>Informações Básicas</h2>
@@ -163,10 +182,15 @@ function TournamentEditPage() {
               </div>
 
               <div className="form-group">
-                <label>Tipo de Torneio *</label>
+                <label>
+                  Tipo de Torneio *
+                  {isActive && <span style={{ marginLeft: 8, fontSize: '0.75rem', color: '#92400e' }}>🔒 travado (torneio ativo)</span>}
+                </label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  disabled={isActive}
+                  style={isActive ? { background: '#f3f4f6', cursor: 'not-allowed' } : undefined}
                 >
                   <option value="super_oito">🏐 Super Oito (Duplas Rotativas)</option>
                   <option value="round_robin">🔄 Round Robin (Todos vs Todos)</option>
@@ -259,9 +283,14 @@ function TournamentEditPage() {
 
           {step === 2 && (
             <div className="step-content">
-              <h2>Categorias</h2>
+              <h2>
+                Categorias
+                {isActive && <span style={{ marginLeft: 8, fontSize: '0.75rem', color: '#92400e' }}>🔒 travadas</span>}
+              </h2>
               <p style={{ color: '#666', marginBottom: '20px' }}>
-                Edite as categorias do seu torneio
+                {isActive
+                  ? 'As categorias não podem ser alteradas enquanto o torneio estiver em andamento (afetaria inscrições, partidas e ranking).'
+                  : 'Edite as categorias do seu torneio'}
               </p>
               <div className="categories-list">
                 {formData.categories.map((cat, idx) => (
@@ -271,6 +300,8 @@ function TournamentEditPage() {
                       <input
                         type="text"
                         value={cat.name}
+                        disabled={isActive}
+                        style={isActive ? { background: '#f3f4f6', cursor: 'not-allowed' } : undefined}
                         onChange={(e) => {
                           const newCats = [...formData.categories];
                           newCats[idx].name = e.target.value;
@@ -285,6 +316,8 @@ function TournamentEditPage() {
                         <input
                           type="number"
                           value={cat.limit}
+                          disabled={isActive}
+                          style={isActive ? { background: '#f3f4f6', cursor: 'not-allowed' } : undefined}
                           onChange={(e) => {
                             const newCats = [...formData.categories];
                             newCats[idx].limit = parseInt(e.target.value);
@@ -294,20 +327,24 @@ function TournamentEditPage() {
                           max="32"
                         />
                       </div>
-                      <button
-                        className="btn-remove"
-                        onClick={() => handleRemoveCategory(idx)}
-                      >
-                        ✕
-                      </button>
+                      {!isActive && (
+                        <button
+                          className="btn-remove"
+                          onClick={() => handleRemoveCategory(idx)}
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
 
-              <button className="btn btn-outline" onClick={handleAddCategory}>
-                + Adicionar Categoria
-              </button>
+              {!isActive && (
+                <button className="btn btn-outline" onClick={handleAddCategory}>
+                  + Adicionar Categoria
+                </button>
+              )}
             </div>
           )}
 

@@ -296,6 +296,9 @@ function TournamentDetailPage() {
                 <a href={`/display/${tournament.slug || id}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
                   Ver Painel Público
                 </a>
+                <Link to={`/tournaments/${id}/edit`} className="btn btn-outline">
+                  ✏️ Editar
+                </Link>
               </div>
             )}
           </div>

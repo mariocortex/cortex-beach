@@ -655,6 +655,24 @@ app.put('/api/tournaments/:id', async (req, res) => {
     const realId = await resolveTournamentId(req.params.id);
     if (!realId) return res.status(404).json({ error: 'Torneio não encontrado' });
 
+    // Busca status atual para aplicar guarda de campos travados
+    const { data: current } = await supabase
+      .from('tournaments')
+      .select('status')
+      .eq('id', realId)
+      .single();
+
+    // Torneio ativo: remove campos que afetariam partidas/ranking
+    if (current?.status === 'active') {
+      const LOCKED_WHEN_ACTIVE = ['type', 'categories', 'scoring_rules'];
+      for (const f of LOCKED_WHEN_ACTIVE) {
+        if (updateData[f] !== undefined) {
+          console.log(`[tournament update] ignorando campo travado "${f}" (torneio ativo)`);
+          delete updateData[f];
+        }
+      }
+    }
+
     // Slug editavel: sanitiza e garante unicidade
     if (req.body.slug !== undefined) {
       const cleaned = slugify(req.body.slug);
