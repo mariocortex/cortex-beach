@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   FiSave, FiSmartphone, FiZap, FiSend, FiList, FiRefreshCw,
-  FiLogOut, FiCheckCircle, FiAlertCircle, FiClock, FiTrash2, FiPlus
+  FiLogOut, FiCheckCircle, FiAlertCircle, FiClock, FiTrash2, FiPlus, FiSearch, FiX
 } from 'react-icons/fi';
 import './WhatsAppConfigPage.css';
 import { API_BASE } from '../config';
@@ -42,6 +42,9 @@ function WhatsAppConfigPage() {
   const [selectedTournament, setSelectedTournament] = useState('');
   const [players, setPlayers] = useState([]);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const [playerSearch, setPlayerSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [onlyWithPhone, setOnlyWithPhone] = useState(true);
   const [messageText, setMessageText] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
@@ -129,6 +132,8 @@ function WhatsAppConfigPage() {
     if (!selectedTournament) {
       setPlayers([]);
       setSelectedPlayers([]);
+      setPlayerSearch('');
+      setCategoryFilter('');
       return;
     }
     (async () => {
@@ -138,10 +143,32 @@ function WhatsAppConfigPage() {
           const data = await res.json();
           setPlayers(data);
           setSelectedPlayers([]);
+          setPlayerSearch('');
+          setCategoryFilter('');
         }
       } catch (err) { console.error(err); }
     })();
   }, [selectedTournament]);
+
+  // Lista única de categorias do torneio atual
+  const playerCategories = useMemo(() => {
+    const set = new Set();
+    players.forEach(p => { if (p.category) set.add(p.category); });
+    return Array.from(set).sort();
+  }, [players]);
+
+  // Jogadores filtrados (busca + categoria + telefone)
+  const filteredPlayers = useMemo(() => {
+    const q = playerSearch.trim().toLowerCase();
+    return players.filter(p => {
+      if (onlyWithPhone && !p.phone) return false;
+      if (categoryFilter && p.category !== categoryFilter) return false;
+      if (!q) return true;
+      const name = (p.name || '').toLowerCase();
+      const phone = (p.phone || '').toLowerCase();
+      return name.includes(q) || phone.includes(q);
+    });
+  }, [players, playerSearch, categoryFilter, onlyWithPhone]);
 
   // Fetch histórico ao trocar para aba
   useEffect(() => {
@@ -261,11 +288,29 @@ function WhatsAppConfigPage() {
     });
   };
 
-  const toggleAll = () => {
-    const withPhone = players.filter(p => p.phone);
-    if (selectedPlayers.length === withPhone.length) setSelectedPlayers([]);
-    else setSelectedPlayers(withPhone);
+  const toggleAllFiltered = () => {
+    const eligibles = filteredPlayers.filter(p => p.phone);
+    const allSelected = eligibles.length > 0 && eligibles.every(
+      p => selectedPlayers.find(sp => sp.player_id === p.player_id)
+    );
+    if (allSelected) {
+      // remove só os filtrados
+      setSelectedPlayers(prev =>
+        prev.filter(sp => !eligibles.find(e => e.player_id === sp.player_id))
+      );
+    } else {
+      // adiciona os filtrados que ainda não estão selecionados
+      setSelectedPlayers(prev => {
+        const next = [...prev];
+        eligibles.forEach(e => {
+          if (!next.find(sp => sp.player_id === e.player_id)) next.push(e);
+        });
+        return next;
+      });
+    }
   };
+
+  const clearSelection = () => setSelectedPlayers([]);
 
   const handleSendMessage = async () => {
     if (selectedPlayers.length === 0) {
@@ -594,33 +639,109 @@ function WhatsAppConfigPage() {
           {selectedTournament && players.length > 0 && (
             <div className="wa-form-group">
               <label>
-                Destinatários ({selectedPlayers.length}/{players.filter(p => p.phone).length} selecionados)
-                <button type="button" className="wa-btn-link" onClick={toggleAll}>
-                  {selectedPlayers.length === players.filter(p => p.phone).length ? 'Desmarcar todos' : 'Selecionar todos'}
-                </button>
+                Destinatários
+                <span className="wa-recipients-count">
+                  <strong>{selectedPlayers.length}</strong> selecionado(s)
+                  {selectedPlayers.length > 0 && (
+                    <button type="button" className="wa-btn-link" onClick={clearSelection}>
+                      limpar
+                    </button>
+                  )}
+                </span>
               </label>
-              <div className="wa-players-list">
-                {players.map(p => {
-                  const hasPhone = !!p.phone;
-                  const isSelected = !!selectedPlayers.find(sp => sp.player_id === p.player_id);
-                  return (
-                    <label
-                      key={p.player_id || p.id}
-                      className={`wa-player ${!hasPhone ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`}
+
+              <div className="wa-recipients-toolbar">
+                <div className="wa-search-box">
+                  <FiSearch />
+                  <input
+                    type="text"
+                    placeholder={`Buscar em ${players.length} jogadores...`}
+                    value={playerSearch}
+                    onChange={e => setPlayerSearch(e.target.value)}
+                  />
+                  {playerSearch && (
+                    <button
+                      type="button"
+                      className="wa-search-clear"
+                      onClick={() => setPlayerSearch('')}
+                      title="Limpar busca"
                     >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => togglePlayer(p)}
-                        disabled={!hasPhone}
-                      />
-                      <div>
-                        <strong>{p.name}</strong>
-                        <small>{p.category} • {p.phone || 'sem telefone'}</small>
-                      </div>
-                    </label>
-                  );
-                })}
+                      <FiX />
+                    </button>
+                  )}
+                </div>
+
+                {playerCategories.length > 1 && (
+                  <select
+                    className="wa-filter-select"
+                    value={categoryFilter}
+                    onChange={e => setCategoryFilter(e.target.value)}
+                  >
+                    <option value="">Todas as categorias</option>
+                    {playerCategories.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                )}
+
+                <label className="wa-filter-check" title="Ocultar jogadores sem telefone">
+                  <input
+                    type="checkbox"
+                    checked={onlyWithPhone}
+                    onChange={e => setOnlyWithPhone(e.target.checked)}
+                  />
+                  <span>só com WhatsApp</span>
+                </label>
+              </div>
+
+              <div className="wa-recipients-meta">
+                <span>
+                  Mostrando <strong>{filteredPlayers.length}</strong> de {players.length}
+                </span>
+                <button
+                  type="button"
+                  className="wa-btn-link"
+                  onClick={toggleAllFiltered}
+                  disabled={filteredPlayers.filter(p => p.phone).length === 0}
+                >
+                  {(() => {
+                    const eligibles = filteredPlayers.filter(p => p.phone);
+                    const allSelected = eligibles.length > 0 && eligibles.every(
+                      p => selectedPlayers.find(sp => sp.player_id === p.player_id)
+                    );
+                    return allSelected ? 'Desmarcar filtrados' : 'Selecionar filtrados';
+                  })()}
+                </button>
+              </div>
+
+              <div className="wa-players-list wa-players-list-lg">
+                {filteredPlayers.length === 0 ? (
+                  <div className="wa-players-empty">
+                    Nenhum jogador encontrado com os filtros atuais.
+                  </div>
+                ) : (
+                  filteredPlayers.map(p => {
+                    const hasPhone = !!p.phone;
+                    const isSelected = !!selectedPlayers.find(sp => sp.player_id === p.player_id);
+                    return (
+                      <label
+                        key={p.player_id || p.id}
+                        className={`wa-player ${!hasPhone ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => togglePlayer(p)}
+                          disabled={!hasPhone}
+                        />
+                        <div>
+                          <strong>{p.name}</strong>
+                          <small>{p.category} • {p.phone || 'sem telefone'}</small>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}

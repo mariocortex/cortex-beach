@@ -455,6 +455,135 @@
   font-weight: 500;
 }
 
+/* ---- Recipients toolbar (search + filters) ---- */
+.wa-recipients-count {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wa-recipients-count strong {
+  color: #0066cc;
+  font-size: 0.95rem;
+}
+
+.wa-recipients-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.wa-search-box {
+  flex: 1 1 240px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wa-search-box svg:first-child {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.wa-search-box input {
+  width: 100%;
+  padding: 10px 36px 10px 36px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.wa-search-box input:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.wa-search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.wa-search-clear:hover {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+.wa-filter-select {
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  min-width: 170px;
+}
+
+.wa-filter-select:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+.wa-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #374151;
+  font-weight: 500;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.wa-filter-check:hover {
+  border-color: #0066cc;
+}
+
+.wa-filter-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #0066cc;
+  margin: 0;
+}
+
+.wa-recipients-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #6b7280;
+  padding: 0 4px 6px;
+}
+
+.wa-recipients-meta strong {
+  color: #111827;
+}
+
 /* ---- Players list ---- */
 .wa-players-list {
   display: flex;
@@ -466,6 +595,17 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #f9fafb;
+}
+
+.wa-players-list-lg {
+  max-height: 480px;
+}
+
+.wa-players-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+  font-size: 0.9rem;
 }
 
 .wa-player {
