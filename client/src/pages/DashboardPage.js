@@ -143,15 +143,15 @@ function DashboardPage({ user }) {
             <span className="action-icon">📝</span>
             <span>Criar Torneio</span>
           </Link>
-          <Link to="/tournaments" className="action-btn">
+          <Link to="/players" className="action-btn">
             <span className="action-icon">👥</span>
             <span>Gerenciar Jogadores</span>
           </Link>
-          <Link to="/tournaments" className="action-btn">
-            <span className="action-icon">📊</span>
-            <span>Ver Estatísticas</span>
+          <Link to="/sponsors" className="action-btn">
+            <span className="action-icon">⭐</span>
+            <span>Patrocinadores</span>
           </Link>
-          <Link to="/tournaments" className="action-btn">
+          <Link to="/settings" className="action-btn">
             <span className="action-icon">⚙️</span>
             <span>Configurações</span>
           </Link>
