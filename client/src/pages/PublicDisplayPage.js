@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import './PublicDisplayPage.css';
-import { API_BASE } from '../config';
+import { API_BASE, normalizeMediaUrl } from '../config';
 
 function PublicDisplayPage() {
   const { tournamentId } = useParams();
@@ -477,6 +477,7 @@ function PublicDisplayPage() {
 
   const renderMediaItem = (item, sponsorName) => {
     const mType = getMediaType(item.url);
+    const mediaUrl = normalizeMediaUrl(item.url);
     if (mType === 'youtube') {
       return (
         <iframe
@@ -490,11 +491,11 @@ function PublicDisplayPage() {
       );
     }
     if (mType === 'video') {
-      return <video src={item.url} autoPlay loop playsInline />;
+      return <video src={mediaUrl} autoPlay loop playsInline />;
     }
     return (
       <img
-        src={item.url}
+        src={mediaUrl}
         alt={sponsorName}
         onError={(e) => {
           e.target.style.display = 'none';

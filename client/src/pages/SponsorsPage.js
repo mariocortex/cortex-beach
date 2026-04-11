@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiSearch, FiStar } from 'react-icons/fi';
 import './SponsorsPage.css';
-import { API_BASE } from '../config';
+import { API_BASE, normalizeMediaUrl } from '../config';
 
 function SponsorsPage() {
   const [sponsors, setSponsors] = useState([]);
@@ -56,9 +56,9 @@ function SponsorsPage() {
               {s.media_url && (
                 <div className="sponsor-list-media">
                   {s.media_type === 'video' ? (
-                    <video src={s.media_url} style={{ maxWidth: '100%', maxHeight: '100px' }} />
+                    <video src={normalizeMediaUrl(s.media_url)} style={{ maxWidth: '100%', maxHeight: '100px' }} />
                   ) : (
-                    <img src={s.media_url} alt={s.name} />
+                    <img src={normalizeMediaUrl(s.media_url)} alt={s.name} />
                   )}
                 </div>
               )}

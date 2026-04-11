@@ -68,8 +68,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Serve uploaded files
+// Serve uploaded files (both paths for backward compat)
 app.use('/uploads', express.static(uploadsDir));
+app.use('/api/uploads', express.static(uploadsDir));
 
 // Supabase initialization
 console.log('[env] SUPABASE_URL present?', !!process.env.SUPABASE_URL, 'len=', (process.env.SUPABASE_URL || '').length);
@@ -1825,7 +1826,10 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   const videoExts = ['.mp4', '.webm', '.mov'];
   const ext = path.extname(req.file.filename).toLowerCase();
   const media_type = videoExts.includes(ext) ? 'video' : 'image';
-  const media_url = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+  // Build URL relative to the incoming request so it works in both dev and production
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  const media_url = `${protocol}://${host}/api/uploads/${req.file.filename}`;
   res.json({ media_url, media_type, filename: req.file.filename });
 });
 

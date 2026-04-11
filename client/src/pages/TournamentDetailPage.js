@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiUsers, FiPlay, FiUserPlus, FiCopy, FiX, FiTrash2, FiStar, FiPlus, FiEdit2 } from 'react-icons/fi';
 import './TournamentDetailPage.css';
-import { API_BASE } from '../config';
+import { API_BASE, normalizeMediaUrl } from '../config';
 
 function TournamentDetailPage() {
   const { id } = useParams();
@@ -829,8 +829,8 @@ function TournamentDetailPage() {
                           {(() => {
                             const ytMatch = m.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
                             if (ytMatch) return <div style={{ width: '108px', height: '70px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', color: '#f00', fontSize: '2rem' }}>▶</div>;
-                            if (m.type === 'video') return <video src={m.url} style={{ width: '108px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} />;
-                            return <img src={m.url} alt="" style={{ width: '108px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} onError={(e) => { e.target.style.background = '#eee'; }} />;
+                            if (m.type === 'video') return <video src={normalizeMediaUrl(m.url)} style={{ width: '108px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} />;
+                            return <img src={normalizeMediaUrl(m.url)} alt="" style={{ width: '108px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} onError={(e) => { e.target.style.background = '#eee'; }} />;
                           })()}
                           <button
                             type="button"
@@ -899,7 +899,7 @@ function TournamentDetailPage() {
                           return (
                             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                               {items.slice(0, 3).map((m, i) => (
-                                <img key={i} src={m.url} alt="" style={{ width: '35px', height: '35px', objectFit: 'cover', borderRadius: '4px' }} onError={(e) => { e.target.style.background = '#ddd'; }} />
+                                <img key={i} src={normalizeMediaUrl(m.url)} alt="" style={{ width: '35px', height: '35px', objectFit: 'cover', borderRadius: '4px' }} onError={(e) => { e.target.style.background = '#ddd'; }} />
                               ))}
                               {items.length > 3 && <span style={{ fontSize: '0.75rem', color: '#999' }}>+{items.length - 3}</span>}
                             </div>
