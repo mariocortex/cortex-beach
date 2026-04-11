@@ -6,8 +6,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Instalar dependências primeiro (cache de camada)
-COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+COPY package.json ./
+RUN npm install --omit=dev
 
 # Código da aplicação
 COPY src ./src
