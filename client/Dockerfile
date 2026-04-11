@@ -12,8 +12,8 @@ RUN npm install
 
 COPY . .
 
-# REACT_APP_API_URL precisa ser passado em build-time via ARG no Easypanel
-ARG REACT_APP_API_URL
+# REACT_APP_API_URL embutido em build-time (Easypanel nao expoe Build Args na UI)
+ARG REACT_APP_API_URL=https://btenis.cortexsolucoes.com.br
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 RUN npm run build
